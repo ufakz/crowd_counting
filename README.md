@@ -8,4 +8,3 @@ Team:
 
 - Umar Faruk Abdullahi
 - Raixa Aurora
-
