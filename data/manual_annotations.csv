@@ -1,3 +1,4 @@
+label,point_x,point_y,image_name,image_width,image_height
 Person,104,774,1660284000.jpg,1920,1080
 Person,148,768,1660284000.jpg,1920,1080
 Person,1458,433,1660284000.jpg,1920,1080
