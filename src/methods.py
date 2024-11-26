@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import cv2
+from collections import defaultdict
 
 def get_canny_edges(target_img: np.ndarray, base_img: np.ndarray, normalize = False) -> np.ndarray:
     
@@ -54,3 +55,14 @@ def rgb_distance_mask(target_img: np.ndarray, base_img: np.ndarray, thresh: int,
         return output
     
     return diff_single
+
+def create_dictionary_image_points(annotations) -> defaultdict:
+
+    data_manual_points = defaultdict(lambda: {'coordinates': []})
+
+    for index, row in annotations.iterrows():
+        image_name=row['image_name']
+        point_x=int(row['point_x'])
+        point_y=int(row['point_y'])
+        data_manual_points[image_name]['coordinates'].append((point_x, point_y))
+    return data_manual_points
