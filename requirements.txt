@@ -1,0 +1,14 @@
+imageio==2.36.0
+Markdown==3.5.2
+opencv-python==4.9.0.80
+pandas
+pillow==11.0.0
+psutil
+py-cpuinfo==9.0.0
+scikit-image==0.24.0
+scikit-learn 
+scipy
+seaborn==0.13.2
+torch==2.5.1
+torchvision==0.20.1
+ultralytics==8.3.34
