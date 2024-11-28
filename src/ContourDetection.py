@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from functools import wraps
 import pandas as pd
-
+from collections import defaultdict
 from src.PerformanceMonitor import PerformanceMonitor
 
 class ContourDetector:
@@ -212,40 +212,72 @@ class ContourDetector:
         mean_mse = eval_df['mse'].mean()
         
         return eval_df, mean_mse
+    
+    def is_within_radius(self, p1, p2, radius):
+        return np.sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2) <= radius
+    
+    def person_level_validation(self,radius=30, show_images=False):
         
-    def person_level_validation(self, show_images=False):
+        true_positives = defaultdict(int)
+        false_positives = defaultdict(int)
+        false_negatives = defaultdict(int)
+        image_names = {}
         
-        results = []
-        for image_name in self.predictions_df['image_name'].unique()[1:]:
-            detected_points = self.predictions_df[self.predictions_df['image_name'] == image_name][['point_x', 'point_y']].values.tolist()
-            manual_points = self.annotations_df[self.annotations_df['image_name'] == image_name][['point_x', 'point_y']].values.tolist()
-            
-            if not detected_points or not manual_points:
+        for image_id in self.annotations_df['image_id'].unique():
+            if image_id == 'image_0':
                 continue
             
-            tp, fp, fn, precision, recall, f1score = self.calculate_F1score_recall_precision(manual_points, detected_points)
+            pred_points = self.predictions_df[self.predictions_df['image_id'] == image_id]
+            annot_points = self.annotations_df[self.annotations_df['image_id'] == image_id]
             
-            accuracy = tp / (tp + fp + fn) if (tp + fp + fn) > 0 else 0
+            image_names[image_id] = annot_points.iloc[0]['image_name']
             
-            results.append({
-                'image_name': image_name,
-                'tp': tp,
-                'fp': fp,
-                'fn': fn,
-                'precision': precision,
-                'recall': recall,
-                'f1score': f1score,
-                'accuracy': accuracy
-            })
+            matched_annotations = set()
             
-            original_image = self.load_image(image_name, show_image=False)
             if show_images:
-                for point in detected_points:
-                    cv2.circle(original_image, (point[0], point[1]), 5, (0, 0, 255), -1)
-                plt.imshow(cv2.cvtColor(original_image, cv2.COLOR_BGR2RGB))
-                plt.title(f'Detected Points on {image_name}')
+                image = self.load_image(image_names[image_id])
+                out = image.copy()
+            
+            for _, pred in pred_points.iterrows():
+                found_match = False
+                for _, annot in annot_points.iterrows():
+                    if self.is_within_radius(
+                    (pred['point_x'], pred['point_y']),
+                    (annot['point_x'], annot['point_y']),
+                    radius
+                    ):
+                        if annot.name not in matched_annotations:
+                            true_positives[image_id] += 1
+                            matched_annotations.add(annot.name)
+                            found_match = True
+                            
+                            if show_images:
+                                cv2.circle(out, (annot['point_x'], annot['point_y']), radius, (127, 255, 25), 3)
+                                cv2.circle(out, (pred['point_x'], pred['point_y']), 5, (0, 0, 255), -1)
+                            break
+                
+                if not found_match:
+                    false_positives[image_id] += 1
+                
+                false_negatives[image_id] = len(annot_points) - true_positives[image_id]
+            
+            if show_images:
+                plt.figure(figsize=(6, 8))
+                plt.imshow(cv2.cvtColor(out, cv2.COLOR_BGR2RGB))
+                plt.title(f'{image_names[image_id]}')
                 plt.show()
-
-        results_df = pd.DataFrame(results)
-        return results_df
+        
+        results = pd.DataFrame({
+            'image_name': pd.Series(image_names),
+            'tp': pd.Series(true_positives),
+            'fp': pd.Series(false_positives),
+            'fn': pd.Series(false_negatives)
+        }).fillna(0)
+        
+        results['precision'] = results['tp'] / (results['tp'] + results['fp'])
+        results['recall'] = results['tp'] / (results['tp'] + results['fn'])
+        results['f1score'] = 2 * (results['precision'] * results['recall']) / (results['precision'] + results['recall'])
+        results['accuracy'] = results['tp'] / (results['tp'] + results['fp'] + results['fn'])
+        
+        return results.fillna(0)
         
