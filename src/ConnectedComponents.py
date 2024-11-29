@@ -8,15 +8,37 @@ from src.PerformanceMonitor import PerformanceMonitor
 
 class ConnectedComponents:
     def __init__(self, manual_annotations):
+        """
+        Initialize the ConnectedComponents class with manual annotations.
+        
+        Args:
+            manual_annotations (pd.DataFrame): DataFrame containing manual annotations.
+        """
         self.performance = PerformanceMonitor()
         self.annotations_df = manual_annotations
         self.predictions_df = None
         
     @property
     def metrics(self):
+        """
+        Get the performance metrics.
+        
+        Returns:
+            dict: Performance metrics.
+        """
         return self.performance.get_metrics()
 
     def load_image(self, image_name, show_image=False):
+        """
+        Load an image from the data directory.
+        
+        Args:
+            image_name (str): Name of the image file.
+            show_image (bool): Whether to display the image.
+        
+        Returns:
+            np.ndarray: Loaded image.
+        """
         image_path = f"data/{image_name}"
         image = cv2.imread(image_path, cv2.IMREAD_COLOR)
         if image is None:
@@ -29,6 +51,17 @@ class ConnectedComponents:
         return image
     
     def get_canny_edges(self, target_img: np.ndarray, base_img: np.ndarray, show_image=False) -> np.ndarray:
+        """
+        Get Canny edges from the target image using the base image.
+        
+        Args:
+            target_img (np.ndarray): Target image.
+            base_img (np.ndarray): Base image.
+            show_image (bool): Whether to display the edges.
+        
+        Returns:
+            np.ndarray: Image with Canny edges.
+        """
         x = cv2.cvtColor(target_img, cv2.COLOR_BGR2GRAY) # x is the target image
         y = cv2.cvtColor(base_img, cv2.COLOR_BGR2GRAY)   # y is the base image
 
@@ -52,6 +85,19 @@ class ConnectedComponents:
         return x
     
     def rgb_distance_mask(self, target_img: np.ndarray, base_img: np.ndarray, thresh: int, morph = False, show_image=False) -> np.ndarray:
+        """
+        Compute the RGB distance mask between the target and base images.
+        
+        Args:
+            target_img (np.ndarray): Target image.
+            base_img (np.ndarray): Base image.
+            thresh (int): Threshold for the distance.
+            morph (bool): Whether to apply morphological operations.
+            show_image (bool): Whether to display the mask.
+        
+        Returns:
+            np.ndarray: RGB distance mask.
+        """
         diff = np.zeros_like(target_img)
         diff_single= np.zeros_like(target_img[:,:,0])
         for i in range(3):
@@ -77,9 +123,39 @@ class ConnectedComponents:
         return diff_single
     
     def process_image(self, image_name, image_id, binary_image, bckg_image, thresh, morph, show_image=False):
+        """
+        Process a single image and measure performance.
+        
+        Args:
+            image_name (str): Name of the image file.
+            image_id (int): ID of the image.
+            binary_image (np.ndarray): Binary image.
+            bckg_image (np.ndarray): Background image.
+            thresh (int): Threshold for the distance.
+            morph (bool): Whether to apply morphological operations.
+            show_image (bool): Whether to display the results.
+        
+        Returns:
+            list: List of detected points.
+        """
         return self.performance.measure_performance(self._process_image, image_name)(image_id, image_name, binary_image, bckg_image, thresh, morph, show_image)
     
     def _process_image(self, image_id, image_name, binary_image, bckg_image, thresh, morph, show_image=False):
+        """
+        Internal method to process a single image.
+        
+        Args:
+            image_id (int): ID of the image.
+            image_name (str): Name of the image file.
+            binary_image (np.ndarray): Binary image.
+            bckg_image (np.ndarray): Background image.
+            thresh (int): Threshold for the distance.
+            morph (bool): Whether to apply morphological operations.
+            show_image (bool): Whether to display the results.
+        
+        Returns:
+            list: List of detected points.
+        """
         points = []
         
         bel1 = self.get_canny_edges(binary_image, bckg_image, show_image)
@@ -100,6 +176,17 @@ class ConnectedComponents:
         return points
 
     def process_images(self, thresh=80, morph=False, show_image=False):
+        """
+        Process all images and generate predictions.
+        
+        Args:
+            thresh (int): Threshold for the distance.
+            morph (bool): Whether to apply morphological operations.
+            show_image (bool): Whether to display the results.
+        
+        Returns:
+            pd.DataFrame: DataFrame containing predictions.
+        """
         processed_images = []
         for idx, name in enumerate(self.annotations_df['image_name'].unique()[1:], start=1):
             image = self.load_image(name, show_image)
@@ -112,6 +199,12 @@ class ConnectedComponents:
         return self.predictions_df
     
     def image_level_validation(self):
+        """
+        Perform image-level validation.
+        
+        Returns:
+            tuple: DataFrame with evaluation results and mean MSE.
+        """
         pred_counts = self.predictions_df.groupby('image_id')['image_name'].agg(['count', 'first']).reset_index()
         pred_counts.columns = ['image_id', 'people', 'image_name']
         
@@ -132,9 +225,30 @@ class ConnectedComponents:
         return eval_df, mean_mse
     
     def is_within_radius(self, p1, p2, radius):
+        """
+        Check if two points are within a given radius.
+        
+        Args:
+            p1 (tuple): First point (x, y).
+            p2 (tuple): Second point (x, y).
+            radius (int): Radius to check.
+        
+        Returns:
+            bool: True if points are within the radius, False otherwise.
+        """
         return np.sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2) <= radius
     
     def person_level_validation(self, radius=30, show_images=False):
+        """
+        Perform person-level validation.
+        
+        Args:
+            radius (int): Radius to check for matching points.
+            show_images (bool): Whether to display the results.
+        
+        Returns:
+            pd.DataFrame: DataFrame containing validation results.
+        """
         true_positives = defaultdict(int)
         false_positives = defaultdict(int)
         false_negatives = defaultdict(int)
