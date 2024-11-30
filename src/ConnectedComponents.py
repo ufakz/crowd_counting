@@ -64,16 +64,21 @@ class ConnectedComponents:
         """
         x = cv2.cvtColor(target_img, cv2.COLOR_BGR2GRAY) # x is the target image
         y = cv2.cvtColor(base_img, cv2.COLOR_BGR2GRAY)   # y is the base image
-
+        
+        # Will use Gaussian blur to smooth the image
         x = cv2.GaussianBlur(x, (5,5), 0)
         
         clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
         x = clahe.apply(x)
 
+        # Will use bilateral filter to smooth the image
         x = cv2.bilateralFilter(x,9,127,127)
+        
+        # Get the absolute difference between the images
         x = cv2.absdiff(x, y)
 
-        x= cv2.Canny(x, 100, 200)
+        # Perform edge detection
+        x = cv2.Canny(x, 100, 200)
         x = cv2.dilate(x, np.ones((3,3)))
         x = cv2.morphologyEx(x, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (1,1)))
         
@@ -98,6 +103,8 @@ class ConnectedComponents:
         Returns:
             np.ndarray: RGB distance mask.
         """
+        
+        # Get the absolute difference between the images
         diff = np.zeros_like(target_img)
         diff_single= np.zeros_like(target_img[:,:,0])
         for i in range(3):
@@ -105,6 +112,7 @@ class ConnectedComponents:
             diff[:,:,i][diff[:,:,i] > thresh] = 255
             diff[:,:,i][diff[:,:,i] < thresh] = 0
 
+        # Combine the channels
         diff_single = cv2.bitwise_and(diff[:,:,0], diff[:,:,1])
         diff_single = cv2.bitwise_and(diff[:,:,1], diff[:,:,2])
         

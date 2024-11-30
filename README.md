@@ -42,6 +42,8 @@ Run the [Crowd Counting Notebook](./CrowdCountingProject.ipynb) in the root dire
 
 Among the three techniques mentioned above, the approach using connected components performed the best compared to the contour detection and deep learning approach. While deep learning solutions excel at diverse situations, this showcases their limitations in complex scenes where the features of the target object might not be clearly visible.
 
+
+
 #### Contour Detection Results
 
 ![](./imgs/contour_metrics.png)
@@ -53,6 +55,29 @@ Among the three techniques mentioned above, the approach using connected compone
 ### MSE Comparison
 
 ![](./imgs/final_mse_comparison.png)
+
+
+### File Structure
+
+crowd_counting/ 
+- data/ # Dataset files 
+  - manual_alt.csv # Alternative annotations 
+  - manual_annotations.csv # Ground truth annotations   
+- imgs/ # Result visualizations 
+  - contour_metrics.png 
+  - connected_metrics.png 
+  - final_mse_comparison.png 
+- notebooks/ # Jupyter notebooks 
+  - Crowd_Counting.ipynb 
+  - protoproject.ipynb 
+- src/ # Source code 
+  - ConnectedComponents.py # Connected components detection 
+  - ContourDetection.py # Contour detection implementation 
+  - PerformanceMonitor.py # Performance tracking 
+  - utils.py # Utility functions 
+- CrowdCountingProject.ipynb # Main project notebook 
+- README.md # Project documentation 
+- requirements.txt # Python dependencies
 
 ### Prerequisites
 
@@ -78,4 +103,4 @@ git clone ufakz/crowd_counting
 pip install -r requirements.txt
 ```
 
-3. Run the Notebook
+3. Run the Notebook - [Crowd Counting Project](./CrowdCountingProject.ipynb)
